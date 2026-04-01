@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Priconnecte - Быстрый мессенджер без регистрации">
-    <meta name="theme-color" content="#3390ec">
+    <meta name="theme-color" content="#0a0e27">
     <title>Priconnecte | Мессенджер</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,33 +13,53 @@
 <body>
 
     <!-- ==================== ГЛАВНОЕ ПРИЛОЖЕНИЕ ==================== -->
-    <div id="main-app" class="screen">
+    <div id="main-app">
         
         <!-- ЛЕВАЯ ПАНЕЛЬ -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <button class="icon-btn" onclick="toggleMenu()" title="Меню"><i class="fas fa-bars"></i></button>
+                <div class="logo-section">
+                    <div class="logo-icon-gradient">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h1 class="logo-text">Priconnecte</h1>
+                </div>
+                <button class="icon-btn" onclick="openModal('settings-modal')" title="Настройки">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+
+            <div class="search-section">
                 <div class="search-container">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Поиск" id="chat-search">
+                    <input type="text" placeholder="Поиск чатов..." id="chat-search">
                 </div>
-                <button class="icon-btn" title="Фильтры"><i class="fas fa-filter"></i></button>
             </div>
 
             <div class="user-profile-mini" onclick="openModal('profile-modal')">
-                <div class="avatar-small" id="mini-avatar">
+                <div class="avatar-gradient" id="mini-avatar">
                     <span id="mini-avatar-initial">U</span>
                 </div>
                 <div class="user-info-mini">
-                    <span class="user-name" id="mini-username">Гость</span>
-                    <span class="user-status">онлайн</span>
+                    <span class="user-name" id="mini-username">Загрузка...</span>
+                    <span class="user-status"><i class="fas fa-circle online-dot"></i> онлайн</span>
                 </div>
-                <i class="fas fa-chevron-right" style="margin-left: auto; color: var(--text-secondary);"></i>
+                <i class="fas fa-chevron-right chevron-icon"></i>
             </div>
 
-            <div class="chat-list" id="chat-list-container">
-                <!-- Чаты генерируются через JS -->
+            <div class="chat-tabs">
+                <button class="tab-btn active" data-tab="all">
+                    <i class="fas fa-comment"></i> Все
+                </button>
+                <button class="tab-btn" data-tab="unread">
+                    <i class="fas fa-envelope"></i> Непрочитанные
+                </button>
+                <button class="tab-btn" data-tab="archived">
+                    <i class="fas fa-archive"></i> Архив
+                </button>
             </div>
+
+            <div class="chat-list" id="chat-list-container"></div>
 
             <!-- Контекстное меню -->
             <div class="context-menu hidden" id="sidebar-menu">
@@ -57,90 +76,127 @@
                     <i class="fas fa-bookmark"></i> Избранное
                 </div>
                 <div class="menu-divider"></div>
+                <div class="menu-item" onclick="openModal('settings-modal')">
+                    <i class="fas fa-cog"></i> Настройки
+                </div>
                 <div class="menu-item" onclick="window.location.href='passwords.html'">
                     <i class="fas fa-shield-alt"></i> Безопасность
                 </div>
-                <div class="menu-item" onclick="toggleTheme()">
-                    <i class="fas fa-moon"></i> Тёмная тема
-                </div>
                 <div class="menu-divider"></div>
-                <div class="menu-item" onclick="clearData()">
+                <div class="menu-item danger" onclick="clearData()">
                     <i class="fas fa-trash"></i> Очистить данные
                 </div>
             </div>
         </aside>
 
-        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ (ЧАТ) -->
+        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ -->
         <main class="chat-area">
             <header class="chat-header">
                 <div class="chat-header-info" onclick="toggleInfoPanel()">
-                    <div class="avatar-small" id="current-chat-avatar">
+                    <div class="avatar-gradient" id="current-chat-avatar">
                         <span id="current-chat-initial">P</span>
                     </div>
                     <div class="chat-header-text">
                         <h3 id="current-chat-name">Выберите чат</h3>
-                        <span class="status-text" id="current-chat-status">—</span>
+                        <span class="status-text" id="current-chat-status">
+                            <i class="fas fa-circle online-dot"></i> в сети
+                        </span>
                     </div>
                 </div>
                 <div class="chat-header-actions">
-                    <button class="icon-btn" title="Поиск"><i class="fas fa-search"></i></button>
-                    <button class="icon-btn" title="Звонок"><i class="fas fa-phone"></i></button>
-                    <button class="icon-btn" title="Видеозвонок"><i class="fas fa-video"></i></button>
-                    <button class="icon-btn" title="Информация"><i class="fas fa-ellipsis-v"></i></button>
+                    <button class="header-btn" title="Поиск"><i class="fas fa-search"></i></button>
+                    <button class="header-btn" title="Звонок"><i class="fas fa-phone"></i></button>
+                    <button class="header-btn" title="Видео"><i class="fas fa-video"></i></button>
+                    <button class="header-btn" title="Меню"><i class="fas fa-ellipsis-v"></i></button>
                 </div>
             </header>
 
             <div class="messages-container" id="messages-box">
-                <div class="message date-divider">Сегодня</div>
+                <div class="message date-divider">
+                    <span>Сегодня</span>
+                </div>
             </div>
 
             <div class="typing-indicator hidden" id="typing-indicator">
-                <span class="typing-dots">
+                <div class="typing-dots">
                     <span class="dot"></span>
                     <span class="dot"></span>
                     <span class="dot"></span>
-                </span>
+                </div>
                 <span class="typing-text">печатает...</span>
             </div>
 
             <div class="input-area">
-                <button class="icon-btn attach-btn" title="Прикрепить"><i class="fas fa-paperclip"></i></button>
+                <button class="icon-btn attach-btn" title="Прикрепить">
+                    <i class="fas fa-paperclip"></i>
+                </button>
                 <div class="input-wrapper">
                     <input type="text" id="message-input" placeholder="Написать сообщение..." autocomplete="off">
-                    <button class="icon-btn emoji-btn" title="Смайлы" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
+                    <button class="icon-btn emoji-btn" title="Эмодзи" onclick="toggleEmojiPicker()">
+                        <i class="far fa-smile"></i>
+                    </button>
                 </div>
-                <button class="icon-btn mic-btn" id="send-mic-toggle" title="Голосовое"><i class="fas fa-microphone"></i></button>
-                <button class="icon-btn send-btn hidden" id="send-btn" onclick="sendMessage()" title="Отправить"><i class="fas fa-paper-plane"></i></button>
+                <button class="icon-btn mic-btn" id="send-mic-toggle" title="Голосовое">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="send-btn-gradient hidden" id="send-btn" onclick="sendMessage()" title="Отправить">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
             </div>
         </main>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ (ИНФО) -->
+        <!-- ПРАВАЯ ПАНЕЛЬ -->
         <aside class="info-panel hidden" id="info-panel">
             <div class="info-header">
-                <button class="icon-btn" onclick="toggleInfoPanel()"><i class="fas fa-times"></i></button>
+                <button class="icon-btn" onclick="toggleInfoPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
                 <h3>Информация</h3>
                 <div style="width: 40px"></div>
             </div>
+            
             <div class="info-content">
                 <div class="info-avatar-large">
-                    <span id="info-panel-initial">P</span>
+                    <div class="avatar-gradient-large">
+                        <span id="info-panel-initial">P</span>
+                    </div>
                 </div>
-                <h2 id="info-panel-name">Имя контакта</h2>
-                <p class="info-status" id="info-panel-status">был(а) недавно</p>
                 
+                <h2 id="info-panel-name">Имя контакта</h2>
+                <p class="info-status" id="info-panel-status">
+                    <i class="fas fa-circle online-dot"></i> в сети
+                </p>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" title="Звонок">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="quick-action-btn" title="Видео">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="quick-action-btn" title="Поиск">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
                 <div class="info-section">
+                    <h4><i class="fas fa-user"></i> Информация</h4>
                     <div class="info-row">
-                        <i class="fas fa-user"></i>
+                        <i class="fas fa-at"></i>
                         <span id="info-panel-username">@username</span>
                     </div>
                     <div class="info-row">
                         <i class="fas fa-info-circle"></i>
                         <span id="info-panel-bio">О себе</span>
                     </div>
+                    <div class="info-row">
+                        <i class="fas fa-clock"></i>
+                        <span>Был(а) недавно</span>
+                    </div>
                 </div>
 
                 <div class="info-section">
-                    <h4>Медиа, файлы и ссылки</h4>
+                    <h4><i class="fas fa-images"></i> Медиа</h4>
                     <div class="media-grid">
                         <div class="media-item"><i class="fas fa-image"></i></div>
                         <div class="media-item"><i class="fas fa-file-alt"></i></div>
@@ -149,61 +205,106 @@
                         <div class="media-item"><i class="fas fa-video"></i></div>
                         <div class="media-item"><i class="fas fa-folder"></i></div>
                     </div>
-                    <button class="btn-text full-width" style="margin-top: 12px;">Показать все</button>
                 </div>
-                
+
                 <div class="info-section">
-                     <h4>Общие чаты</h4>
-                     <div class="common-chats-list">
-                         <div class="common-chat-item">Priconnecte News</div>
-                         <div class="common-chat-item">Developers</div>
-                         <div class="common-chat-item">Design Team</div>
-                     </div>
+                    <h4><i class="fas fa-users"></i> Общие чаты</h4>
+                    <div class="common-chats-list">
+                        <div class="common-chat-item">
+                            <div class="avatar-small-gradient">P</div>
+                            <span>Priconnecte News</span>
+                        </div>
+                        <div class="common-chat-item">
+                            <div class="avatar-small-gradient">D</div>
+                            <span>Developers</span>
+                        </div>
+                        <div class="common-chat-item">
+                            <div class="avatar-small-gradient">T</div>
+                            <span>Design Team</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4><i class="fas fa-bell"></i> Уведомления</h4>
+                    <div class="toggle-row">
+                        <span>Звук</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <span>Вибрация</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <span>Предпросмотр</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                 </div>
             </div>
+            
             <div class="info-footer">
-                <button class="btn-danger full-width" onclick="blockUser()">Заблокировать</button>
+                <button class="btn-danger-gradient full-width" onclick="blockUser()">
+                    <i class="fas fa-ban"></i> Заблокировать
+                </button>
             </div>
         </aside>
     </div>
 
     <!-- ==================== МОДАЛЬНЫЕ ОКНА ==================== -->
 
-    <!-- Профиль пользователя -->
+    <!-- Профиль -->
     <div class="modal-overlay hidden" id="profile-modal">
         <div class="modal-window profile-window">
-            <div class="modal-header">
-                <h3>Мой профиль</h3>
-                <button class="icon-btn" onclick="closeModal('profile-modal')"><i class="fas fa-times"></i></button>
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-user-circle"></i> Мой профиль</h3>
+                <button class="icon-btn" onclick="closeModal('profile-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="profile-avatar-section">
-                    <div class="avatar-large" id="profile-avatar">
+                    <div class="avatar-large-gradient" id="profile-avatar">
                         <span id="profile-avatar-initial">U</span>
                     </div>
-                    <button class="icon-btn" onclick="changeAvatar()" title="Сменить аватар">
+                    <button class="btn-change-avatar" onclick="changeAvatar()">
                         <i class="fas fa-camera"></i>
                     </button>
                 </div>
                 
                 <div class="input-group">
-                    <label for="profile-name">Ваше имя</label>
-                    <input type="text" id="profile-name" class="input-field" placeholder="Как к вам обращаться?">
+                    <label><i class="fas fa-user"></i> Ваше имя</label>
+                    <input type="text" id="profile-name" class="input-field-gradient" placeholder="Как к вам обращаться?">
                 </div>
 
                 <div class="input-group">
-                    <label for="profile-username">Имя пользователя</label>
-                    <input type="text" id="profile-username" class="input-field" placeholder="@username">
+                    <label><i class="fas fa-at"></i> Имя пользователя</label>
+                    <input type="text" id="profile-username" class="input-field-gradient" placeholder="@username">
                 </div>
 
                 <div class="input-group">
-                    <label for="profile-bio">О себе</label>
-                    <textarea id="profile-bio" class="input-field" placeholder="Расскажите о себе" rows="3"></textarea>
+                    <label><i class="fas fa-info-circle"></i> О себе</label>
+                    <textarea id="profile-bio" class="input-field-gradient" placeholder="Расскажите о себе" rows="3"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-envelope"></i> Email (необязательно)</label>
+                    <input type="email" id="profile-email" class="input-field-gradient" placeholder="example@mail.com">
                 </div>
 
                 <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('profile-modal')">Отмена</button>
-                    <button class="btn-primary" onclick="saveProfile()">Сохранить</button>
+                    <button class="btn-secondary-gradient" onclick="closeModal('profile-modal')">Отмена</button>
+                    <button class="btn-primary-gradient" onclick="saveProfile()">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
                 </div>
             </div>
         </div>
@@ -212,26 +313,145 @@
     <!-- Настройки -->
     <div class="modal-overlay hidden" id="settings-modal">
         <div class="modal-window settings-window">
-            <div class="modal-header">
-                <h3>Настройки</h3>
-                <button class="icon-btn" onclick="closeModal('settings-modal')"><i class="fas fa-times"></i></button>
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-cog"></i> Настройки</h3>
+                <button class="icon-btn" onclick="closeModal('settings-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <div class="settings-list">
-                    <div class="settings-item" onclick="toggleTheme()">
-                        <div class="settings-icon blue"><i class="fas fa-moon"></i></div>
+                
+                <!-- Внешний вид -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-palette"></i> Внешний вид
+                    </h4>
+                    
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient blue">
+                            <i class="fas fa-moon"></i>
+                        </div>
                         <div class="settings-text">
-                            <span>Ночная тема</span>
+                            <span>Тёмная тема</span>
                             <small>Переключить оформление</small>
                         </div>
                         <label class="switch">
-                            <input type="checkbox" id="theme-switch">
-                            <span class="slider round"></span>
+                            <input type="checkbox" id="theme-switch" onchange="toggleTheme()">
+                            <span class="slider"></span>
                         </label>
                     </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient purple">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Обои чата</span>
+                            <small>Фон переписки</small>
+                        </div>
+                        <button class="btn-small" onclick="changeChatBackground()">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient orange">
+                            <i class="fas fa-text-height"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Размер шрифта</span>
+                            <small>14px</small>
+                        </div>
+                        <button class="btn-small" onclick="changeFontSize()">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient green">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Отправка Enter</span>
+                            <small>Нажмите Enter для отправки</small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="enter-send-switch" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Уведомления -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-bell"></i> Уведомления
+                    </h4>
+                    
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient red">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Звук уведомлений</span>
+                            <small>Воспроизводить звук</small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="sound-switch" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient blue">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Вибрация</span>
+                            <small>Вибрировать при уведомлении</small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="vibration-switch" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon-gradient purple">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Уведомления на ПК</span>
+                            <small>Показывать на рабочем столе</small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="desktop-notif-switch" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item" onclick="openModal('notification-sounds-modal')">
+                        <div class="settings-icon-gradient green">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Звук уведомления</span>
+                            <small>Default</small>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Приватность -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-lock"></i> Приватность
+                    </h4>
                     
                     <div class="settings-item" onclick="window.location.href='passwords.html'">
-                        <div class="settings-icon red"><i class="fas fa-lock"></i></div>
+                        <div class="settings-icon-gradient red">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
                         <div class="settings-text">
                             <span>Безопасность</span>
                             <small>Пароль, 2FA, данные</small>
@@ -239,32 +459,158 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
 
-                    <div class="settings-item">
-                        <div class="settings-icon green"><i class="fas fa-bell"></i></div>
-                        <div class="settings-text">
-                            <span>Уведомления</span>
-                            <small>Звук, вибрация</small>
+                    <div class="settings-item" onclick="openModal('privacy-modal')">
+                        <div class="settings-icon-gradient blue">
+                            <i class="fas fa-eye"></i>
                         </div>
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                    
-                    <div class="settings-item">
-                        <div class="settings-icon orange"><i class="fas fa-palette"></i></div>
                         <div class="settings-text">
-                            <span>Обои чата</span>
-                            <small>Фон переписки</small>
+                            <span>Кто может видеть</span>
+                            <small>Статус, фото, онлайн</small>
                         </div>
                         <i class="fas fa-chevron-right"></i>
                     </div>
 
-                    <div class="settings-item">
-                        <div class="settings-icon purple"><i class="fas fa-language"></i></div>
+                    <div class="settings-item" onclick="openModal('blocked-modal')">
+                        <div class="settings-icon-gradient orange">
+                            <i class="fas fa-ban"></i>
+                        </div>
                         <div class="settings-text">
-                            <span>Язык</span>
-                            <small>Русский</small>
+                            <span>Заблокированные</span>
+                            <small>0 контактов</small>
                         </div>
                         <i class="fas fa-chevron-right"></i>
                     </div>
+                </div>
+
+                <!-- Данные -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-database"></i> Данные
+                    </h4>
+                    
+                    <div class="settings-item" onclick="exportData()">
+                        <div class="settings-icon-gradient green">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Экспорт данных</span>
+                            <small>Скачать все данные</small>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item" onclick="clearCache()">
+                        <div class="settings-icon-gradient blue">
+                            <i class="fas fa-trash-alt"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Очистить кэш</span>
+                            <small>Освободить место</small>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item danger" onclick="clearData()">
+                        <div class="settings-icon-gradient red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="settings-text">
+                            <span>Удалить все данные</span>
+                            <small>Полный сброс</small>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- О приложении -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">
+                        <i class="fas fa-info-circle"></i> О приложении
+                    </h4>
+                    
+                    <div class="app-info-card">
+                        <div class="logo-icon-gradient" style="width: 60px; height: 60px; margin: 0 auto 16px;">
+                            <i class="fas fa-paper-plane" style="font-size: 28px;"></i>
+                        </div>
+                        <h3 style="text-align: center; margin-bottom: 8px;">Priconnecte</h3>
+                        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 16px;">
+                            Быстрый. Безопасный. Современный.
+                        </p>
+                        <div class="version-info">
+                            <div class="version-row">
+                                <span>Версия</span>
+                                <span class="version-value">1.0.0</span>
+                            </div>
+                            <div class="version-row">
+                                <span>Сборка</span>
+                                <span class="version-value">2024.01</span>
+                            </div>
+                            <div class="version-row">
+                                <span>Режим</span>
+                                <span class="version-value">Без регистрации</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Приватность -->
+    <div class="modal-overlay hidden" id="privacy-modal">
+        <div class="modal-window">
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-eye"></i> Приватность</h3>
+                <button class="icon-btn" onclick="closeModal('privacy-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Статус "Онлайн"</label>
+                    <select id="privacy-online" class="input-field-gradient">
+                        <option value="everyone">Все</option>
+                        <option value="contacts">Мои контакты</option>
+                        <option value="nobody">Никто</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Фото профиля</label>
+                    <select id="privacy-photo" class="input-field-gradient">
+                        <option value="everyone">Все</option>
+                        <option value="contacts">Мои контакты</option>
+                        <option value="nobody">Никто</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Последний визит</label>
+                    <select id="privacy-lastseen" class="input-field-gradient">
+                        <option value="everyone">Все</option>
+                        <option value="contacts">Мои контакты</option>
+                        <option value="nobody">Никто</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-secondary-gradient" onclick="closeModal('privacy-modal')">Отмена</button>
+                    <button class="btn-primary-gradient" onclick="savePrivacySettings()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Заблокированные -->
+    <div class="modal-overlay hidden" id="blocked-modal">
+        <div class="modal-window">
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-ban"></i> Заблокированные</h3>
+                <button class="icon-btn" onclick="closeModal('blocked-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="blocked-list" id="blocked-list">
+                    <p class="empty-state">Нет заблокированных контактов</p>
                 </div>
             </div>
         </div>
@@ -273,28 +619,24 @@
     <!-- Новая группа -->
     <div class="modal-overlay hidden" id="create-group-modal">
         <div class="modal-window">
-            <div class="modal-header">
-                <h3>Новая группа</h3>
-                <button class="icon-btn" onclick="closeModal('create-group-modal')"><i class="fas fa-times"></i></button>
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-users"></i> Новая группа</h3>
+                <button class="icon-btn" onclick="closeModal('create-group-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="input-group">
                     <label>Название группы</label>
-                    <input type="text" id="group-name-input" class="input-field" placeholder="Введите название">
+                    <input type="text" id="group-name-input" class="input-field-gradient" placeholder="Введите название">
                 </div>
                 <div class="input-group">
-                    <label>Описание (необязательно)</label>
-                    <textarea id="group-desc-input" class="input-field" placeholder="О чем эта группа?" rows="3"></textarea>
-                </div>
-                <div class="input-group">
-                    <label>Участники</label>
-                    <div class="contacts-select" id="group-contacts">
-                        <!-- Контакты генерируются через JS -->
-                    </div>
+                    <label>Описание</label>
+                    <textarea id="group-desc-input" class="input-field-gradient" placeholder="О чем эта группа?" rows="3"></textarea>
                 </div>
                 <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('create-group-modal')">Отмена</button>
-                    <button class="btn-primary" onclick="createGroup()">Создать</button>
+                    <button class="btn-secondary-gradient" onclick="closeModal('create-group-modal')">Отмена</button>
+                    <button class="btn-primary-gradient" onclick="createGroup()">Создать</button>
                 </div>
             </div>
         </div>
@@ -303,19 +645,19 @@
     <!-- Контакты -->
     <div class="modal-overlay hidden" id="contacts-modal">
         <div class="modal-window">
-            <div class="modal-header">
-                <h3>Контакты</h3>
-                <button class="icon-btn" onclick="closeModal('contacts-modal')"><i class="fas fa-times"></i></button>
+            <div class="modal-header-gradient">
+                <h3><i class="fas fa-address-book"></i> Контакты</h3>
+                <button class="icon-btn" onclick="closeModal('contacts-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="search-container" style="margin-bottom: 16px;">
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Поиск контактов" id="contact-search">
                 </div>
-                <div class="contacts-list" id="contacts-list">
-                    <!-- Контакты генерируются через JS -->
-                </div>
-                <button class="btn-primary full-width" style="margin-top: 16px;">
+                <div class="contacts-list" id="contacts-list"></div>
+                <button class="btn-primary-gradient full-width" style="margin-top: 16px;" onclick="addContact()">
                     <i class="fas fa-user-plus"></i> Добавить контакт
                 </button>
             </div>
