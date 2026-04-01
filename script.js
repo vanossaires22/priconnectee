@@ -1,25 +1,24 @@
-/* ========================================== */
-/* PRICONNECTE MESSENGER - FRONTEND           */
-/* ========================================== */
-
+// Глобальные переменные
 let currentUser = null;
 let currentChat = null;
 let socket = null;
 let chats = [];
-let isDarkTheme = false;
+let isDarkTheme = true;
 let typingTimeout = null;
+let blockedUsers = [];
 
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ
 // ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('%c🚀 Priconnecte Messenger', 'background: #3390ec; color: white; font-size: 16px; padding: 8px;');
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('%c🚀 Priconnecte Messenger', 'background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 16px; padding: 10px; border-radius: 8px;');
     
     loadTheme();
     initializeSocket();
     checkOrCreateUser();
     setupInputHandlers();
     generateTestData();
+    loadBlockedUsers();
 });
 
 // ==========================================
@@ -28,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeSocket() {
     socket = io();
     
-    socket.on('connect', () => console.log('✅ Подключено:', socket.id));
+    socket.on('connect', () => console.log('✅ Подключено'));
     
     socket.on('auth_success', (data) => {
         currentUser = data.user;
@@ -36,20 +35,16 @@ function initializeSocket() {
         console.log('✅ Авторизован:', currentUser.name);
     });
     
-    socket.on('auth_error', (data) => {
-        showNotification(data.error, 'error');
-    });
-    
+    socket.on('auth_error', (data) => showNotification(data.error, 'error'));
     socket.on('new_message', (data) => handleNewMessage(data));
     socket.on('user_typing', (data) => showTypingIndicator(data));
     socket.on('messages_read', (data) => updateMessageStatus(data));
     socket.on('user_status', (data) => updateUserStatus(data));
-    
     socket.on('disconnect', () => showNotification('Потеряно соединение', 'error'));
 }
 
 // ==========================================
-// АВТО-СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ
+// ПОЛЬЗОВАТЕЛЬ
 // ==========================================
 async function checkOrCreateUser() {
     let userData = localStorage.getItem('priconnecte_user');
@@ -78,14 +73,11 @@ async function createUser() {
         if (response.ok) {
             currentUser = data.user;
             localStorage.setItem('priconnecte_user', JSON.stringify(currentUser));
-            
             socket.emit('auth', { userId: currentUser.id });
             initApp();
-            
             showNotification('Добро пожаловать в Priconnecte!', 'success');
         }
     } catch (error) {
-        console.error('Ошибка:', error);
         showNotification('Ошибка подключения', 'error');
     }
 }
@@ -96,40 +88,13 @@ function initApp() {
 }
 
 // ==========================================
-// ЧАТЫ И СООБЩЕНИЯ
+// ЧАТЫ
 // ==========================================
 function generateTestData() {
     chats = [
-        {
-            id: 1,
-            name: 'Павел Дуров',
-            avatar: 'П',
-            lastMessage: 'Добро пожаловать в Priconnecte!',
-            time: '14:20',
-            unread: 1,
-            online: true,
-            color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        },
-        {
-            id: 2,
-            name: 'Команда разработки',
-            avatar: 'К',
-            lastMessage: 'Мессенджер работает без регистрации!',
-            time: '10:05',
-            unread: 0,
-            online: false,
-            color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-        },
-        {
-            id: 3,
-            name: 'Избранное',
-            avatar: '★',
-            lastMessage: 'Сохранённые сообщения',
-            time: 'Вчера',
-            unread: 0,
-            online: false,
-            color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-        }
+        { id: 1, name: 'Павел Дуров', avatar: 'П', lastMessage: 'Добро пожаловать!', time: '14:20', unread: 1, online: true, color: 'linear-gradient(135deg, #667eea, #764ba2)' },
+        { id: 2, name: 'Команда', avatar: 'К', lastMessage: 'Мессенджер работает!', time: '10:05', unread: 0, online: false, color: 'linear-gradient(135deg, #f093fb, #f5576c)' },
+        { id: 3, name: 'Избранное', avatar: '★', lastMessage: 'Сохранённые сообщения', time: 'Вчера', unread: 0, online: false, color: 'linear-gradient(135deg, #fa709a, #fee140)' }
     ];
 }
 
@@ -144,7 +109,7 @@ function renderChatList() {
         el.onclick = () => selectChat(chat.id);
         
         el.innerHTML = `
-            <div class="avatar" style="background: ${chat.color}">${chat.avatar}
+            <div class="avatar-gradient">${chat.avatar}
                 ${chat.online ? '<span class="status-dot online"></span>' : ''}
             </div>
             <div class="chat-info">
@@ -174,10 +139,13 @@ function selectChat(chatId) {
         document.getElementById('current-chat-name').textContent = chat.name;
         document.getElementById('current-chat-initial').textContent = chat.avatar;
         document.getElementById('current-chat-avatar').style.background = chat.color;
-        document.getElementById('current-chat-status').textContent = chat.online ? 'в сети' : 'был(а) недавно';
+        document.getElementById('current-chat-status').innerHTML = chat.online ? 
+            '<i class="fas fa-circle online-dot"></i> в сети' : 'был(а) недавно';
         
         document.getElementById('info-panel-name').textContent = chat.name;
         document.getElementById('info-panel-initial').textContent = chat.avatar;
+        document.getElementById('info-panel-status').innerHTML = chat.online ?
+            '<i class="fas fa-circle online-dot"></i> в сети' : 'был(а) недавно';
         
         loadMessages(chatId);
         chat.unread = 0;
@@ -187,7 +155,7 @@ function selectChat(chatId) {
 
 function loadMessages(chatId) {
     const container = document.getElementById('messages-box');
-    container.innerHTML = '<div class="message date-divider">Сегодня</div>';
+    container.innerHTML = '<div class="message date-divider"><span>Сегодня</span></div>';
     
     const testMessages = [
         { text: 'Привет! Это Priconnecte!', type: 'in', time: '14:15' },
@@ -239,7 +207,8 @@ function sendMessage() {
 }
 
 function handleEnter(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    const enterSend = document.getElementById('enter-send-switch');
+    if (e.key === 'Enter' && !e.shiftKey && enterSend?.checked) {
         e.preventDefault();
         sendMessage();
     }
@@ -320,15 +289,23 @@ function createGroup() {
     if (name) {
         showNotification(`Группа "${name}" создана`, 'success');
         closeModal('create-group-modal');
+        document.getElementById('group-name-input').value = '';
+        document.getElementById('group-desc-input').value = '';
     }
 }
 
 function blockUser() {
-    if (confirm('Заблокировать?')) showNotification('Пользователь заблокирован', 'success');
+    if (confirm('Заблокировать этого пользователя?')) {
+        if (currentChat) {
+            blockedUsers.push(currentChat.id);
+            localStorage.setItem('priconnecte_blocked', JSON.stringify(blockedUsers));
+            showNotification('Пользователь заблокирован', 'success');
+        }
+    }
 }
 
 function toggleEmojiPicker() {
-    showNotification('Эмодзи', 'info');
+    showNotification('Эмодзи панель', 'info');
 }
 
 // ==========================================
@@ -342,13 +319,21 @@ function updateProfileUI() {
     document.getElementById('profile-name').value = currentUser.name;
     document.getElementById('profile-username').value = currentUser.username;
     document.getElementById('profile-bio').value = currentUser.bio || '';
+    document.getElementById('profile-email').value = currentUser.email || '';
     document.getElementById('profile-avatar-initial').textContent = currentUser.name.charAt(0).toUpperCase();
+    
+    // Настройки
+    if (currentUser.settings) {
+        document.getElementById('theme-switch').checked = currentUser.settings.theme === 'dark';
+        document.getElementById('enter-send-switch').checked = currentUser.settings.enterSend !== false;
+    }
 }
 
 function saveProfile() {
     const name = document.getElementById('profile-name').value.trim();
     const username = document.getElementById('profile-username').value.trim();
     const bio = document.getElementById('profile-bio').value.trim();
+    const email = document.getElementById('profile-email').value.trim();
     
     if (!name) {
         showNotification('Введите имя', 'error');
@@ -358,11 +343,12 @@ function saveProfile() {
     currentUser.name = name;
     currentUser.username = username;
     currentUser.bio = bio;
+    currentUser.email = email;
     
     fetch(`/api/user/profile/${currentUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, username, bio })
+        body: JSON.stringify({ name, username, bio, email })
     });
     
     localStorage.setItem('priconnecte_user', JSON.stringify(currentUser));
@@ -379,37 +365,52 @@ function changeAvatar() {
 // ТЕМА
 // ==========================================
 function loadTheme() {
-    if (localStorage.getItem('priconnecte_theme') === 'dark') {
+    const saved = localStorage.getItem('priconnecte_theme');
+    if (saved === 'dark' || saved === null) {
         document.body.setAttribute('data-theme', 'dark');
         isDarkTheme = true;
-        const sw = document.getElementById('theme-switch');
-        if (sw) sw.checked = true;
     }
 }
 
 function toggleTheme() {
     isDarkTheme = !isDarkTheme;
-    document.body.setAttribute('data-theme', isDarkTheme ? 'dark' : '');
+    document.body.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
     localStorage.setItem('priconnecte_theme', isDarkTheme ? 'dark' : 'light');
-    const sw = document.getElementById('theme-switch');
-    if (sw) sw.checked = isDarkTheme;
-    showNotification(isDarkTheme ? 'Тёмная тема' : 'Светлая тема', 'success');
+    
+    if (currentUser) {
+        currentUser.settings.theme = isDarkTheme ? 'dark' : 'light';
+        fetch(`/api/user/profile/${currentUser.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: currentUser.settings })
+        });
+    }
+    
+    showNotification(isDarkTheme ? 'Тёмная тема включена' : 'Светлая тема включена', 'success');
 }
 
 // ==========================================
-// ДАННЫЕ
+// НАСТРОЙКИ
 // ==========================================
-function clearData() {
-    if (confirm('Очистить все данные и начать заново?')) {
-        localStorage.removeItem('priconnecte_user');
-        location.reload();
+function changeChatBackground() {
+    showNotification('Выбор обоев', 'info');
+}
+
+function changeFontSize() {
+    showNotification('Изменение размера шрифта', 'info');
+}
+
+function clearCache() {
+    if (confirm('Очистить кэш приложения?')) {
+        localStorage.removeItem('priconnecte_cache');
+        showNotification('Кэш очищен', 'success');
     }
 }
 
-function confirmClearData() {
-    if (confirm('Это удалит все данные безвозвратно!')) {
+function clearData() {
+    if (confirm('Это удалит ВСЕ данные безвозвратно! Продолжить?')) {
         fetch(`/api/user/data/${currentUser.id}`, { method: 'DELETE' });
-        localStorage.removeItem('priconnecte_user');
+        localStorage.clear();
         location.reload();
     }
 }
@@ -424,46 +425,9 @@ function exportData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'priconnecte-data.json';
+    a.download = `priconnecte-backup-${Date.now()}.json`;
     a.click();
     showNotification('Данные экспортированы', 'success');
-}
-
-// ==========================================
-// БЕЗОПАСНОСТЬ (passwords.html)
-// ==========================================
-function toggleLocalPassword() {
-    const form = document.getElementById('local-password-form');
-    const btn = document.getElementById('local-pass-btn');
-    if (form) {
-        form.classList.toggle('hidden');
-        btn.innerHTML = form.classList.contains('hidden') ? 
-            '<i class="fas fa-plus"></i> Включить' : 
-            '<i class="fas fa-minus"></i> Отмена';
-    }
-}
-
-function cancelLocalPassword() {
-    document.getElementById('local-password-form').classList.add('hidden');
-    document.getElementById('local-pass-btn').innerHTML = '<i class="fas fa-plus"></i> Включить';
-}
-
-function saveLocalPassword() {
-    const pass = document.getElementById('local-password').value;
-    const confirm = document.getElementById('local-password-confirm').value;
-    
-    if (pass.length < 4) {
-        showNotification('Минимум 4 символа', 'error');
-        return;
-    }
-    if (pass !== confirm) {
-        showNotification('Пароли не совпадают', 'error');
-        return;
-    }
-    
-    localStorage.setItem('priconnecte_local_pass', pass);
-    cancelLocalPassword();
-    showNotification('Пароль установлен', 'success');
 }
 
 function savePrivacySettings() {
@@ -473,29 +437,33 @@ function savePrivacySettings() {
         lastSeen: document.getElementById('privacy-lastseen').value
     };
     
+    currentUser.privacy = { ...currentUser.privacy, ...privacy };
+    
     fetch(`/api/user/profile/${currentUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ privacy })
     });
     
-    showNotification('Настройки сохранены', 'success');
+    localStorage.setItem('priconnecte_user', JSON.stringify(currentUser));
+    closeModal('privacy-modal');
+    showNotification('Настройки приватности сохранены', 'success');
+}
+
+function loadBlockedUsers() {
+    const blocked = localStorage.getItem('priconnecte_blocked');
+    if (blocked) {
+        blockedUsers = JSON.parse(blocked);
+    }
+}
+
+function addContact() {
+    showNotification('Добавление контакта', 'info');
 }
 
 // ==========================================
-// УТИЛИТЫ
+// УВЕДОМЛЕНИЯ
 // ==========================================
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function formatTime(timestamp) {
-    const d = new Date(timestamp);
-    return d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-}
-
 function showNotification(message, type = 'success') {
     const container = document.getElementById('notification-container');
     const notification = document.createElement('div');
@@ -528,18 +496,34 @@ function showTypingIndicator(data) {
 
 function updateMessageStatus(data) {
     data.messageIds.forEach(id => {
-        const el = document.querySelector(`[data-message-id="${id}"]`);
-        if (el) {
-            const meta = el.querySelector('.message-meta');
-            if (meta) meta.innerHTML = meta.innerHTML.replace('fa-check', 'fa-check-double');
-        }
+        const messages = document.querySelectorAll('.message.out');
+        messages.forEach(msg => {
+            const meta = msg.querySelector('.message-meta');
+            if (meta && !meta.querySelector('.fa-check-double')) {
+                meta.innerHTML = meta.innerHTML.replace('fa-check', 'fa-check-double');
+            }
+        });
     });
 }
 
 function updateUserStatus(data) {
-    const item = document.querySelector(`[data-user-id="${data.userId}"]`);
-    if (item) {
-        const dot = item.querySelector('.status-dot');
+    const chatItem = document.querySelector(`[data-chat-id="${data.userId}"]`);
+    if (chatItem) {
+        const dot = chatItem.querySelector('.status-dot');
         if (dot) dot.classList.toggle('online', data.status === 'online');
     }
+}
+
+// ==========================================
+// УТИЛИТЫ
+// ==========================================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(timestamp) {
+    const d = new Date(timestamp);
+    return d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
 }
